@@ -3,6 +3,7 @@ const Usuario = require("../models/usuarioModelo");
 const asyncHandler = require("express-async-handler");
 const validarMongoDbId = require("../utils/validarMongodbId");
 const { actualizarRToken } = require("../config/refrescarToken");
+const jwt = require("jsonwebtoken");
 
 const crearUsuario = asyncHandler(async (req, res) => {
   //comprobar si el usuario existe
@@ -35,7 +36,7 @@ const loginUsuarioCtrl = asyncHandler(async (req, res) => {
         new: true,
       }
     );
-    res.cookie("actualizarToken", refrescarToken, {
+    res.cookie("refrescarToken", refrescarToken, {
       // Configuración para la cookie  solo sea accesible a través de HTTP y no desde JavaScript en el navegador
       httpOnly: true,
       //Estableciendo la duracion de la cookie 74 horas(en milisegundos)
@@ -56,9 +57,39 @@ const loginUsuarioCtrl = asyncHandler(async (req, res) => {
 
 //manejador de token de actualización
 const manejadorReinicio = asyncHandler(async (req, res) => {
+  // Obtener la cookie del request
   const cookie = req.cookies;
-  console.log(cookie);
+
+  // Verificar si existe la propiedad refrescarToken en la cookie
+  if (!cookie?.refrescarToken) throw new Error("No se actualizó la cookie");
+
+  // Obtener el valor de refrescarToken de la cookie
+  const refrescarToken = cookie.refrescarToken;
+
+  // Buscar al usuario en la base de datos utilizando el refrescarToken
+  const usuario = await Usuario.findOne({ refrescarToken });
+
+  // Verificar si se encontró al usuario
+  if (!usuario) {
+    throw new Error(
+      "No se pudo actualizar el token presente en la base de datos o no coincide"
+    );
+  }
+
+  // Verificar la validez del refrescarToken utilizando el JWT_CLS secreto
+  jwt.verify(refrescarToken, process.env.JWT_CLS, (err, decoded) => {
+    if (err || usuario.id !== decoded.id) {
+      throw new Error("Hay algún problema con el token de actualización");
+    }
+
+    // Generar un nuevo token de acceso
+    const accesoToken = generarToken(usuario?._id);
+
+    // Enviar el nuevo token de acceso como respuesta JSON
+    res.json({ accesoToken });
+  });
 });
+
 
 //Actualizar Usuarios
 const updateUsuario = asyncHandler(async (req, res) => {

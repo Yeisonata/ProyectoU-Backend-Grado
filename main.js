@@ -21,6 +21,6 @@ app.use(errorHandler)
 
 app.listen(PORT, () => {
   console.log(`La aplicación está funcionando en http://localhost:${PORT}`);
-  
+   
 });
 
