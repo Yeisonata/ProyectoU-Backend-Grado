@@ -90,6 +90,36 @@ const manejadorReinicio = asyncHandler(async (req, res) => {
   });
 });
 
+//Cerrar Sesion funcionalidad
+const cerrarSesion = asyncHandler(async (req, res) => {
+  // Obtener la cookie del request para comprobarlas
+  const cookie = req.cookies;
+  // Verificar si existe la propiedad refrescarToken en la cookie
+  if (!cookie?.refrescarToken) throw new Error("No se actualizó la cookie");
+  // Obtener el valor de refrescarToken de la cookie
+  const refrescarToken = cookie.refrescarToken;
+  // Buscar al usuario en la base de datos utilizando el refrescarToken
+  const usuario = await Usuario.findOne({ refrescarToken });
+   // Verificar si el usuario no fue encontrado
+  if (!usuario) {
+    // Limpiar la cookie y enviar una respuesta exitosa sin contenido
+    res.clearCookie("refrescarToken", {
+      httpOnly: true,
+      secure: true,
+    });
+    return res.sendStatus(204);
+  }
+   // Actualizar el refrescarToken del usuario en la base de datos a una cadena vacía
+  await Usuario.findOneAndUpdate({ refrescarToken }, {
+    refrescarToken: "",
+  });
+  // Limpiar la cookie después de la actualización y enviar una respuesta exitosa sin contenido
+  res.clearCookie("refrescarToken", {
+    httpOnly: true,
+    secure: true,
+  });
+  res.sendStatus(204); 
+});
 
 //Actualizar Usuarios
 const updateUsuario = asyncHandler(async (req, res) => {
@@ -200,4 +230,5 @@ module.exports = {
   bloquearUsuario,
   desbloquearUsuario,
   manejadorReinicio,
+  cerrarSesion,
 };

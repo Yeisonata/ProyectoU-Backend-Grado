@@ -9,6 +9,7 @@ const {
   bloquearUsuario,
   desbloquearUsuario,
   manejadorReinicio,
+  cerrarSesion,
 } = require("../controller/usuarioController");
 const { authMiddleware, esAdmin } = require("../middleware/authMiddleware");
 
@@ -18,6 +19,7 @@ router.post("/registrar", crearUsuario);
 router.post("/login", loginUsuarioCtrl);
 router.get("/usuarios", getallUsuarios);
 router.get("/refrescar", manejadorReinicio);
+router.get("/cerrarSesion",cerrarSesion)
 router.get("/:id-usuario", authMiddleware, esAdmin, getUsuario);
 router.delete("/:id-usuario", deleteUsuario);
 router.put("/editar-usuario", authMiddleware, updateUsuario);
