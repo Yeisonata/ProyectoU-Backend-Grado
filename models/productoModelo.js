@@ -29,7 +29,10 @@ var productoSchema = new mongoose.Schema({
     type: String,
     enum: ["Apple", "Samsung", "Xiaomi"],
   },
-  cantidad: Number,
+  cantidad: {
+    type:Number,
+    required:true
+  },
   imagenes: {
     type: Array,
   },
