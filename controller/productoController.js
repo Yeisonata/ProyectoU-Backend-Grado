@@ -33,5 +33,14 @@ const obtenerProducto = asyncHandler(async (req, res) => {
   }
 });
 
+const getAllProductos  = asyncHandler(async(req,res)=>{
+  try {
+    const getallProductos = await Producto.find()
+    res.json(getallProductos)
+  } catch (error) {
+    throw new Error(error)
+  }
+})
+
 // Exportar el controlador para su uso en las rutas
-module.exports = { crearProducto ,obtenerProducto };
+module.exports = { crearProducto ,obtenerProducto,getAllProductos };
