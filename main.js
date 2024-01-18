@@ -9,7 +9,10 @@ const authRouter = require("./routes/authRoute");
 const productoRouter = require("./routes/productoRoute")
 const cookieParser = require("cookie-parser")
 const { noEncontrado, errorHandler } = require("./middleware/manejadorError");
+const morgan = require("morgan")
 dbConexion();
+
+app.use(morgan("dev"))
 app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({ extended: false }));
 app.use(cookieParser())

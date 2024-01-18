@@ -2,7 +2,7 @@
 const express = require("express");
 
 // Importar el controlador de productos
-const { crearProducto, obtenerProducto, getAllProductos } = require("../controller/productoController");
+const { crearProducto, obtenerProducto, getAllProductos, actualizarProducto } = require("../controller/productoController");
 
 // Crear una instancia de Router de express
 const router = express.Router();
@@ -11,6 +11,7 @@ const router = express.Router();
 router.post("/", crearProducto);
 // Ruta GET para obtener un producto por id, utilizando el controlador  obtenerProducto
 router.get("/:id", obtenerProducto);
+router.put("/:id", actualizarProducto);
 router.get("/", getAllProductos);
 
 // Exportar el router para su uso en la aplicación principal
