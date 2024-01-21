@@ -48,6 +48,28 @@ const actualizarProducto = asyncHandler(async (req, res) => {
   }
 });
 
+
+// Define la función asincrónica eliminarProducto utilizando asyncHandler
+const eliminarProducto = asyncHandler(async (req, res) => {
+  // Desestructura el objeto req.params para obtener el valor específico 'id'
+  const { id } = req.params;
+
+  try {
+    // Utiliza findOneAndDelete para eliminar el producto por su '_id' en la base de datos
+    const productoEliminado = await Producto.findOneAndDelete( id );
+
+    // Responde con el producto eliminado en formato JSON
+    res.json(productoEliminado);
+  } catch (error) {
+    // Captura y lanza cualquier error que ocurra durante el proceso
+    throw new Error(error);
+  }
+});
+
+// Exporta la función para su uso en las rutas
+module.exports = { eliminarProducto };
+
+
 // Controlador para obtener un producto por su ID
 const obtenerProducto = asyncHandler(async (req, res) => {
   // Extraer el ID del parámetro de la solicitud
@@ -84,4 +106,5 @@ module.exports = {
   obtenerProducto,
   getAllProductos,
   actualizarProducto,
+  eliminarProducto
 };
