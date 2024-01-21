@@ -48,7 +48,6 @@ const actualizarProducto = asyncHandler(async (req, res) => {
   }
 });
 
-
 // Define la función asincrónica eliminarProducto utilizando asyncHandler
 const eliminarProducto = asyncHandler(async (req, res) => {
   // Desestructura el objeto req.params para obtener el valor específico 'id'
@@ -56,7 +55,7 @@ const eliminarProducto = asyncHandler(async (req, res) => {
 
   try {
     // Utiliza findOneAndDelete para eliminar el producto por su '_id' en la base de datos
-    const productoEliminado = await Producto.findOneAndDelete( id );
+    const productoEliminado = await Producto.findOneAndDelete(id);
 
     // Responde con el producto eliminado en formato JSON
     res.json(productoEliminado);
@@ -68,7 +67,6 @@ const eliminarProducto = asyncHandler(async (req, res) => {
 
 // Exporta la función para su uso en las rutas
 module.exports = { eliminarProducto };
-
 
 // Controlador para obtener un producto por su ID
 const obtenerProducto = asyncHandler(async (req, res) => {
@@ -89,8 +87,11 @@ const obtenerProducto = asyncHandler(async (req, res) => {
 // Define la función asincrónica getAllProductos utilizando asyncHandler
 const getAllProductos = asyncHandler(async (req, res) => {
   try {
+     //consulta que recopila los parámetros de la solicitud
+    const queryObje = {...req.query}
     // Utiliza el modelo de productos para buscar todos los productos en la base de datos
-    const todosLosProductos = await Producto.find();
+    // Filtra por categoría si se proporciona el parámetro 'categoria' en la solicitud
+    const todosLosProductos = await Producto.where("categoria").equals(req.query.categoria)
 
     // Responde con la lista de todos los productos en formato JSON
     res.json(todosLosProductos);
@@ -106,5 +107,5 @@ module.exports = {
   obtenerProducto,
   getAllProductos,
   actualizarProducto,
-  eliminarProducto
+  eliminarProducto,
 };
