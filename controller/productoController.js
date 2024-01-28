@@ -87,14 +87,45 @@ const obtenerProducto = asyncHandler(async (req, res) => {
 // Define la función asincrónica getAllProductos utilizando asyncHandler
 const getAllProductos = asyncHandler(async (req, res) => {
   try {
-     //consulta que recopila los parámetros de la solicitud
-    const queryObje = {...req.query}
-    // Utiliza el modelo de productos para buscar todos los productos en la base de datos
-    // Filtra por categoría si se proporciona el parámetro 'categoria' en la solicitud
-    const todosLosProductos = await Producto.where("categoria").equals(req.query.categoria)
+    // consulta que recopila los parámetros de la solicitud
+    const queryObje = { ...req.query };
+    const excluirCampos = ["pagina", "calificaciones", "limite", "campos"];
+    excluirCampos.forEach((el) => delete queryObje[el]);
+    let queryStr = JSON.stringify(queryObje);
+    queryStr = queryStr.replace(/\b(gte|gt|lte|lt)\b/g, (match) => `$${match}`);
+    let query = Producto.find(JSON.parse(queryStr));
 
+    //Funcion para ordenar los productos
+    if (req.query.sort) {
+      const ordenadoPor = req.query.sort.split(",").join("");
+      query = query.sort(ordenadoPor);
+    } else {
+      query = query.sort("-createdAt");
+    }
+
+    //Limitar los campos
+    if (req.query.campos) {
+      const limitador = req.query.campos.split(",").join(" ");
+      query = query.select(limitador);
+    } else {
+      query = query.select("-__v");
+    }
+    //paginado
+    const pagina = parseInt(req.query.pagina) || 1;
+    const limite = parseInt(req.query.limite) || 10;
+    const omitir = (pagina - 1) * limite;
+    query = query.skip(omitir).limit(limite);
+    if (req.query.pagina) {
+      const recuentoProducto = await Producto.countDocuments();
+      if (omitir >= recuentoProducto) throw new Error("Esta pagina no existe");
+    }
+    console.log(pagina, limite, omitir);
+
+    // Utiliza el modelo de productos para buscar todos los productos en la base de datos
+    const producto = await query;
+    //
     // Responde con la lista de todos los productos en formato JSON
-    res.json(todosLosProductos);
+    res.json(producto);
   } catch (error) {
     // Captura y lanza cualquier error que ocurra durante el proceso
     throw new Error(error);

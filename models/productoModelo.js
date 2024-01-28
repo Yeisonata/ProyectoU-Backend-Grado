@@ -31,7 +31,9 @@ var productoSchema = new mongoose.Schema({
   },
   cantidad: {
     type:Number,
-    required:true
+    required:true,
+    
+    
   },
   imagenes: {
     type: Array,
@@ -39,6 +41,7 @@ var productoSchema = new mongoose.Schema({
   vendido: {
     type: Number,
     default: 0,
+    
   },
   color: {
     type: String,
