@@ -10,12 +10,16 @@ const {
   desbloquearUsuario,
   manejadorReinicio,
   cerrarSesion,
+  actualizarContrasenia,
+  olvidasteContraseñaToken
 } = require("../controller/usuarioController");
 const { authMiddleware, esAdmin } = require("../middleware/authMiddleware");
 
 const router = express.Router();
 
 router.post("/registrar", crearUsuario);
+router.post("/contrasenia-olvidada-token",olvidasteContraseñaToken)
+router.put("/contrasenia",authMiddleware,actualizarContrasenia)
 router.post("/login", loginUsuarioCtrl);
 router.get("/usuarios", getallUsuarios);
 router.get("/refrescar", manejadorReinicio);

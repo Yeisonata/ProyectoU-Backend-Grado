@@ -4,6 +4,7 @@ const asyncHandler = require("express-async-handler");
 const validarMongoDbId = require("../utils/validarMongodbId");
 const { actualizarRToken } = require("../config/refrescarToken");
 const jwt = require("jsonwebtoken");
+const enviarCorreo = require("./correoController");
 
 const crearUsuario = asyncHandler(async (req, res) => {
   //comprobar si el usuario existe
@@ -100,7 +101,7 @@ const cerrarSesion = asyncHandler(async (req, res) => {
   const refrescarToken = cookie.refrescarToken;
   // Buscar al usuario en la base de datos utilizando el refrescarToken
   const usuario = await Usuario.findOne({ refrescarToken });
-   // Verificar si el usuario no fue encontrado
+  // Verificar si el usuario no fue encontrado
   if (!usuario) {
     // Limpiar la cookie y enviar una respuesta exitosa sin contenido
     res.clearCookie("refrescarToken", {
@@ -109,16 +110,19 @@ const cerrarSesion = asyncHandler(async (req, res) => {
     });
     return res.sendStatus(204);
   }
-   // Actualizar el refrescarToken del usuario en la base de datos a una cadena vacía
-  await Usuario.findOneAndUpdate({ refrescarToken }, {
-    refrescarToken: "",
-  });
+  // Actualizar el refrescarToken del usuario en la base de datos a una cadena vacía
+  await Usuario.findOneAndUpdate(
+    { refrescarToken },
+    {
+      refrescarToken: "",
+    }
+  );
   // Limpiar la cookie después de la actualización y enviar una respuesta exitosa sin contenido
   res.clearCookie("refrescarToken", {
     httpOnly: true,
     secure: true,
   });
-  res.sendStatus(204); 
+  res.sendStatus(204);
 });
 
 //Actualizar Usuarios
@@ -219,6 +223,60 @@ const desbloquearUsuario = asyncHandler(async (req, res) => {
     throw new Error(error);
   }
 });
+const actualizarContrasenia = asyncHandler(async (req, res) => {
+  const { _id } = req.usuario || {};
+  const { contrasenia } = req.body;
+  validarMongoDbId(_id);
+
+  const usuario = await Usuario.findById(_id);
+  if (contrasenia) {
+    usuario.contrasenia = contrasenia;
+    const actualizarContrasenia = await usuario.save();
+    res.json(actualizarContrasenia);
+  } else {
+    res.json(usuario);
+  }
+});
+
+const olvidasteContraseñaToken = asyncHandler(async (req, res) => {
+  const { email } = req.body;
+  const usuario = await Usuario.findOne({ email });
+
+  if (!usuario) {
+    return res
+      .status(404)
+      .json({ mensaje: "El usuario no está registrado con este correo." });
+  }
+
+  try {
+    const token = await usuario.createPasswordRestToken();
+    await usuario.save();
+
+    const URLRestablecimiento = `
+      Por favor, ingrese a este enlace para restablecer tu contraseña.
+      Este enlace será válido hasta 10 minutos desde este momento: 
+      <a href="http://localhost:4000/api/usuario/reiniciar-contrasenia/${token}">Haz clic aquí</a>
+    `;
+
+    const data = {
+      to: email,
+      text: "Hola Estimado Usuario",
+      subject: "Contraseña Olvidada Link",
+      htm: URLRestablecimiento,
+    };
+    
+
+    enviarCorreo(data);
+    res.json({ token });
+  } catch (error) {
+    console.error(error.message);
+    res
+      .status(500)
+      .json({
+        mensaje: "Error al generar el token de restablecimiento de contraseña.",
+      });
+  }
+});
 
 module.exports = {
   crearUsuario,
@@ -231,4 +289,6 @@ module.exports = {
   desbloquearUsuario,
   manejadorReinicio,
   cerrarSesion,
+  actualizarContrasenia,
+  olvidasteContraseñaToken,
 };

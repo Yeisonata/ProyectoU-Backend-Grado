@@ -119,7 +119,7 @@ const getAllProductos = asyncHandler(async (req, res) => {
       const recuentoProducto = await Producto.countDocuments();
       if (omitir >= recuentoProducto) throw new Error("Esta pagina no existe");
     }
-    console.log(pagina, limite, omitir);
+    // console.log(pagina, limite, omitir);
 
     // Utiliza el modelo de productos para buscar todos los productos en la base de datos
     const producto = await query;

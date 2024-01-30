@@ -56,13 +56,14 @@ var userSchema = new mongoose.Schema(
 //Para encriptar la contraseña
 userSchema.pre("save", async function (next) {
   //Para comprobar si la contraseña fue modificada
-  if (!this.esModificada("contrasenia")) {
+  if (!this.isModified("contrasenia")) {
     next();
   }
   const salt = await bcrypt.genSaltSync(10);
   this.contrasenia = await bcrypt.hash(this.contrasenia, salt);
   next();
 });
+
 
 //Método para que la contraseña encriptada coincida con la ingresada
 userSchema.methods.isPasswordMatched = async function (enteredPassword) {
@@ -74,8 +75,8 @@ userSchema.methods.createPasswordRestToken = async function () {
     .createHash("sha256")
     .update(cambiartoken)
     .digest("hex");
-  this.expiracionRenovacionContrasenia = Date.now() + 30 * 60 * 1000; //10 minutos
-  return cambiartoken;
+    this.expiracionRenovacionContrasenia=Date.now()+30*60*1000 //10 minutos
+    return cambiartoken
 };
 
 //Export the model
