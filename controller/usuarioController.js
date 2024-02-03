@@ -3,6 +3,7 @@ const Usuario = require("../models/usuarioModelo");
 const asyncHandler = require("express-async-handler");
 const validarMongoDbId = require("../utils/validarMongodbId");
 const { actualizarRToken } = require("../config/refrescarToken");
+const crypto = require("crypto");
 const jwt = require("jsonwebtoken");
 const enviarCorreo = require("./correoController");
 
@@ -255,7 +256,7 @@ const olvidasteContraseñaToken = asyncHandler(async (req, res) => {
     const URLRestablecimiento = `
       Por favor, ingrese a este enlace para restablecer tu contraseña.
       Este enlace será válido hasta 10 minutos desde este momento: 
-      <a href="http://localhost:4000/api/usuario/reiniciar-contrasenia/${token}">Haz clic aquí</a>
+      <a href="http://localhost:4000/api/usuario/restablecer-contrasenia/${token}">Haz clic aquí</a>
     `;
 
     const data = {
@@ -264,17 +265,49 @@ const olvidasteContraseñaToken = asyncHandler(async (req, res) => {
       subject: "Contraseña Olvidada Link",
       htm: URLRestablecimiento,
     };
-    
 
     enviarCorreo(data);
     res.json({ token });
   } catch (error) {
-    console.error(error.message);
-    res
-      .status(500)
-      .json({
-        mensaje: "Error al generar el token de restablecimiento de contraseña.",
-      });
+    console.error(error.mensaje);
+    res.status(500).json({
+      mensaje: "Error al generar el token de restablecimiento de contraseña.",
+    });
+  }
+});
+const restablecerContrasenia = asyncHandler(async (req, res) => {
+  try {
+    // Extraer la nueva contraseña del cuerpo de la solicitud
+    const { contrasenia } = req.body;
+
+    // Extraer el token de restablecimiento de la URL y hashearlo para comparación
+    const { token } = req.params;
+    const tokenHasheado = crypto.createHash("sha256").update(token).digest("hex");
+
+    // Buscar un usuario en la base de datos con el token y que no haya expirado
+    const usuario = await Usuario.findOne({
+      actualizarContraseniaToken: tokenHasheado,
+      expiracionRenovacionContrasenia: { $gt: Date.now() },
+    });
+
+    // Verificar si se encontró un usuario
+    if (!usuario) {
+      throw new Error("Token expirado o no válido. Por favor, inténtalo de nuevo.");
+    }
+
+    // Actualizar la contraseña y limpiar campos relacionados al restablecimiento
+    usuario.contrasenia = contrasenia;
+    usuario.actualizarContraseniaToken = undefined;
+    usuario.expiracionRenovacionContrasenia = undefined;
+
+    // Guardar el usuario actualizado en la base de datos
+    await usuario.save();
+
+    // Enviar una respuesta JSON con el usuario actualizado
+    res.json(usuario);
+  } catch (error) {
+    // Capturar cualquier error que ocurra durante el proceso
+    res.status(500).json({ error: error.message });
   }
 });
 
@@ -291,4 +324,5 @@ module.exports = {
   cerrarSesion,
   actualizarContrasenia,
   olvidasteContraseñaToken,
+  restablecerContrasenia,
 };
