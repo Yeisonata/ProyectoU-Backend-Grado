@@ -11,7 +11,8 @@ const {
   manejadorReinicio,
   cerrarSesion,
   actualizarContrasenia,
-  olvidasteContraseñaToken
+  olvidasteContraseñaToken,
+  restablecerContrasenia
 } = require("../controller/usuarioController");
 const { authMiddleware, esAdmin } = require("../middleware/authMiddleware");
 
@@ -19,6 +20,7 @@ const router = express.Router();
 
 router.post("/registrar", crearUsuario);
 router.post("/contrasenia-olvidada-token",olvidasteContraseñaToken)
+router.put("/restablecer-contrasenia/:token",restablecerContrasenia)
 router.put("/contrasenia",authMiddleware,actualizarContrasenia)
 router.post("/login", loginUsuarioCtrl);
 router.get("/usuarios", getallUsuarios);
