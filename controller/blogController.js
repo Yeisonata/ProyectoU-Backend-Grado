@@ -14,6 +14,7 @@ const crearBlog = asyncHandler(async (req, res) => {
 
 const actualizarBlog = asyncHandler(async (req, res) => {
   const { id } = req.params;
+  validarMongoDbId(id);
   try {
     const actualizarBlog = await Blog.findByIdAndUpdate(id, req.body, {
       new: true,
@@ -25,8 +26,9 @@ const actualizarBlog = asyncHandler(async (req, res) => {
 });
 const obtenerBlog = asyncHandler(async (req, res) => {
   const { id } = req.params;
+  validarMongoDbId(id);
   try {
-    const obtenerBlog = await Blog.findById(id);
+    const obtenerBlog = await Blog.findById(id).populate("likes").populate("dislikes");
     const actualizarVisitas = await Blog.findByIdAndUpdate(
       id,
       {
@@ -34,28 +36,132 @@ const obtenerBlog = asyncHandler(async (req, res) => {
       },
       { new: true }
     );
-    res.json( actualizarVisitas);
+    res.json(obtenerBlog);
   } catch (error) {
     throw new Error(error);
   }
 });
 
-const obtenerAllBlogs =asyncHandler(async(req,res)=>{
+const obtenerAllBlogs = asyncHandler(async (req, res) => {
   try {
-    const obtenerAllBlogs  = await Blog.find()
-    res.json(obtenerAllBlogs );
+    const obtenerAllBlogs = await Blog.find();
+    res.json(obtenerAllBlogs);
   } catch (error) {
-    throw new Error(error)
+    throw new Error(error);
   }
-})
+});
 const eliminarBlog = asyncHandler(async (req, res) => {
   const { id } = req.params;
+  validarMongoDbId(id);
   try {
-    const eliminarBlog = await Blog.findByIdAndDelete(id)
+    const eliminarBlog = await Blog.findByIdAndDelete(id);
     res.json(eliminarBlog);
   } catch (error) {
     throw new Error(error);
   }
 });
+const meGustaBlog = asyncHandler(async (req, res) => {
+  const { blogId } = req.body;
+  validarMongoDbId(blogId);
 
-module.exports = { crearBlog, actualizarBlog, obtenerBlog,obtenerAllBlogs,eliminarBlog };
+  const blog = await Blog.findById(blogId);
+  const inicioIdUsuario = req?.usuario?._id;
+
+  const esMeGustas = blog?.esMeGustas;
+
+  const yaNoMeGusta = blog?.dislikes?.find(
+    (usuarioId) => usuarioId?.toString() === inicioIdUsuario?.toString()
+  );
+
+  if (yaNoMeGusta) {
+    const blogActualizado = await Blog.findByIdAndUpdate(
+      blogId,
+      {
+        $pull: { dislikes: inicioIdUsuario },
+        esNoMeGustas: false,
+      },
+      { new: true }
+    );
+    res.json(blogActualizado);
+  }
+
+  if (esMeGustas) {
+    const blogActualizado = await Blog.findByIdAndUpdate(
+      blogId,
+      {
+        $pull: { likes: inicioIdUsuario },
+        esMeGustas: false,
+      },
+      { new: true }
+    );
+    res.json(blogActualizado);
+  } else {
+    const blogActualizado = await Blog.findByIdAndUpdate(
+      blogId,
+      {
+        $push: { likes: inicioIdUsuario },
+        esMeGustas: true,
+      },
+      { new: true }
+    );
+    res.json(blogActualizado);
+  }
+});
+
+const noMeGustaBlog = asyncHandler(async (req, res) => {
+  const { blogId } = req.body;
+  validarMongoDbId(blogId);
+
+  const blog = await Blog.findById(blogId);
+  const inicioIdUsuario = req?.usuario?._id;
+
+  const esNoMeGustas = blog?.esNoMeGustas;
+
+  const yaMeGusta = blog?.likes?.find(
+    (usuarioId) => usuarioId?.toString() === inicioIdUsuario?.toString()
+  );
+  
+  if (yaMeGusta) {
+    const updatedBlog = await Blog.findByIdAndUpdate(
+      blogId,
+      {
+        $pull: { likes: inicioIdUsuario },
+        esMeGustas: false,
+      },
+      { new: true }
+    );
+    res.json(updatedBlog);
+  }
+
+  if (esNoMeGustas) {
+    const updatedBlog = await Blog.findByIdAndUpdate(
+      blogId,
+      {
+        $pull: { dislikes: inicioIdUsuario },
+        esNoMeGustas: false,
+      },
+      { new: true }
+    );
+    res.json(updatedBlog);
+  } else {
+    const updatedBlog = await Blog.findByIdAndUpdate(
+      blogId,
+      {
+        $push: { dislikes: inicioIdUsuario },
+        esNoMeGustas: true,
+      },
+      { new: true }
+    );
+    res.json(updatedBlog);
+  }
+});
+
+module.exports = {
+  crearBlog,
+  actualizarBlog,
+  obtenerBlog,
+  obtenerAllBlogs,
+  eliminarBlog,
+  meGustaBlog,
+  noMeGustaBlog,
+};
