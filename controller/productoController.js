@@ -1,6 +1,8 @@
 // Importar el modelo de productos
 const Producto = require("../models/productoModelo");
 
+const Usuario = require("../models/usuarioModelo");
+
 // Importar la utilidad para manejar funciones asíncronas en Express
 const asyncHandler = require("express-async-handler");
 
@@ -132,6 +134,97 @@ const getAllProductos = asyncHandler(async (req, res) => {
   }
 });
 
+const addListaDeDeseos = asyncHandler(async (req, res) => {
+  const { _id } = req.usuario;
+  const { prodId } = req.body;
+  try {
+    const usuario = await Usuario.findById(_id);
+    const yaAgregado = usuario.listaDeDeseos.find(
+      (id) => id.toString() === prodId
+    );
+    if (yaAgregado) {
+      let usuario = await Usuario.findByIdAndUpdate(
+        _id,
+        {
+          $pull: { listaDeDeseos: prodId },
+        },
+        {
+          new: true,
+        }
+      );
+      res.json(usuario);
+    } else {
+      let usuario = await Usuario.findByIdAndUpdate(
+        _id,
+        {
+          $push: { listaDeDeseos: prodId },
+        },
+        {
+          new: true,
+        }
+      );
+      res.json(usuario);
+    }
+  } catch (error) {
+    throw new Error(error);
+  }
+});
+
+const califacacion = asyncHandler(async (req, res) => {
+  const { _id } = req.usuario;
+  const { estrella, prodId,comentario } = req.body;
+
+  try {
+    const producto = await Producto.findById(prodId);
+
+    let yaCalificado = producto.calificaciones.find(
+      (calificacion) => calificacion.publicadorpor.toString() === _id.toString()
+    );
+
+    if (yaCalificado) {
+      const actualizarCalificacion = await Producto.findOneAndUpdate(
+        { "calificaciones.publicadorpor": _id },
+        { $set: { "calificaciones.$.estrella": estrella, "calificaciones.$.comentario":comentario } },
+        { new: true }
+      );
+
+    } else {
+      const calificarProducto = await Producto.findByIdAndUpdate(
+        prodId,
+        {
+          $push: {
+            calificaciones: {
+              estrella: estrella,
+              comentario: comentario,
+              publicadorpor: _id,
+            },
+          },
+        },
+        { new: true }
+      );
+     
+    }
+    const obtenerAllCalificaciones = await Producto.findById(prodId);
+    const totalCalificacion = obtenerAllCalificaciones.calificaciones.length;
+    let sumCalificaciones = obtenerAllCalificaciones.calificaciones
+      .map((item) => item.estrella)
+      .reduce((prev, curr) => prev + curr, 0);
+    let califacionActual = Math.round(sumCalificaciones / totalCalificacion);
+     let productoFinal =await Producto.findByIdAndUpdate(
+      prodId,
+      {
+        totalCalificacion: califacionActual,
+      },
+      { new: true }
+    );
+    res.json(productoFinal)
+  } catch (error) {
+    // Manejo de errores: enviar una respuesta al cliente con un mensaje de error
+    // res.status(500).json({ error: "Error al procesar la solicitud." });
+    throw new Error(error)
+  }
+});
+
 // Exportar el controlador para su uso en las rutas
 module.exports = {
   crearProducto,
@@ -139,4 +232,6 @@ module.exports = {
   getAllProductos,
   actualizarProducto,
   eliminarProducto,
+  addListaDeDeseos,
+  califacacion,
 };

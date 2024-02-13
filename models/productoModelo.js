@@ -50,9 +50,14 @@ var productoSchema = new mongoose.Schema({
   calificaciones: [
     {
       estrella: Number,
+      comentario:String,
       publicadorpor: { type: mongoose.Schema.Types.ObjectId, ref: "Usuario" },
     },
   ],
+  totalCalificacion:{
+    type:String,
+    default:0
+  }
 },{timestamps:true});
 
 //Export the model

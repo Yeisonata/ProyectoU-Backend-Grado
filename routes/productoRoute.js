@@ -8,6 +8,8 @@ const {
   getAllProductos,
   actualizarProducto,
   eliminarProducto,
+  addListaDeDeseos,
+  califacacion,
 } = require("../controller/productoController");
 
 // Importa las funciones 'esAdmin' y 'authMiddleware' desde el módulo 'authMiddleware'
@@ -22,6 +24,8 @@ const router = express.Router();
 router.post("/", authMiddleware, esAdmin, crearProducto);
 // Ruta GET para obtener un producto por id, utilizando el controlador  obtenerProducto
 router.get("/:id", obtenerProducto);
+router.put("/listaDeDeseos",authMiddleware,addListaDeDeseos)
+router.put("/calificacion",authMiddleware,califacacion)
 
 router.put("/:id", authMiddleware, esAdmin, actualizarProducto);
 router.delete("/:id", authMiddleware, esAdmin, eliminarProducto);
