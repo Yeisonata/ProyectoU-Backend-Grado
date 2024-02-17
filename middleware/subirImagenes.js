@@ -1,7 +1,7 @@
 const multer = require("multer"); // Importa la biblioteca multer para manejar la carga de archivos
 const sharp = require("sharp"); // Importa la biblioteca sharp para redimensionar imágenes
 const path = require("path"); // Importa la biblioteca path para manejar rutas de archivos
-
+const fs =require("fs")
 // Configura el almacenamiento de archivos con multer
 const multerStorage = multer.diskStorage({
   destination: function (req, file, cb) { // Define la carpeta de destino para guardar las imágenes
@@ -44,6 +44,7 @@ const productoImgResize = async (req, res, next) => {
         .toFormat("jpeg") // Convierte las imágenes a formato JPEG
         .jpeg({ quality: 90 }) // Define la calidad de compresión JPEG
         .toFile(`public/images/productos/${file.filename}`); // Guarda las imágenes redimensionadas en una carpeta específica
+        fs.unlinkSync(`public/images/productos/${file.filename}`)
     })
   );
   next(); // Llama al siguiente middleware
@@ -59,6 +60,8 @@ const blogImgResize = async (req, res, next) => {
         .toFormat("jpeg")
         .jpeg({ quality: 90 })
         .toFile(`public/images/blogs/${file.filename}`);
+        fs.unlinkSync(`public/images/blogs/${file.filename}`)
+
     })
   );
   next();
