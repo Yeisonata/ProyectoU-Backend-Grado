@@ -12,7 +12,8 @@ const {
   cerrarSesion,
   actualizarContrasenia,
   olvidasteContraseñaToken,
-  restablecerContrasenia
+  restablecerContrasenia,
+  loginAdmin
 } = require("../controller/usuarioController");
 const { authMiddleware, esAdmin } = require("../middleware/authMiddleware");
 
@@ -23,6 +24,7 @@ router.post("/contrasenia-olvidada-token",olvidasteContraseñaToken)
 router.put("/restablecer-contrasenia/:token",restablecerContrasenia)
 router.put("/contrasenia",authMiddleware,actualizarContrasenia)
 router.post("/login", loginUsuarioCtrl);
+router.post("/admin-login", loginAdmin);
 router.get("/usuarios", getallUsuarios);
 router.get("/refrescar", manejadorReinicio);
 router.get("/cerrarSesion",cerrarSesion)

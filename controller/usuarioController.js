@@ -21,7 +21,7 @@ const crearUsuario = asyncHandler(async (req, res) => {
   }
 });
 
-//Controlador de inicio de session
+//Controlador de inicio de session Usuario
 const loginUsuarioCtrl = asyncHandler(async (req, res) => {
   const { email, contrasenia } = req.body;
   //Verificar si el usuario existe o no
@@ -56,6 +56,48 @@ const loginUsuarioCtrl = asyncHandler(async (req, res) => {
     throw new Error("Credenciales inválidas");
   }
 });
+
+////Controlador de inicio de session Admin
+const loginAdmin = asyncHandler(async (req, res) => {
+  const { email, contrasenia } = req.body;
+  // Verificar si el admin existe o no
+  const buscarAdmin = await Usuario.findOne({ email });
+  // Verificar si se encontró un usuario y si tiene el rol de "admin"
+  if (buscarAdmin && buscarAdmin.roles === "admin") {
+    // Si el usuario es un administrador, comprobar su contraseña
+    if (await buscarAdmin.isPasswordMatched(contrasenia)) {
+      const refrescarToken = await actualizarRToken(buscarAdmin?._id);
+      const actualizarusuario = await Usuario.findByIdAndUpdate(
+        buscarAdmin.id,
+        {
+          refrescarToken: refrescarToken,
+        },
+        {
+          new: true,
+        }
+      );
+      res.cookie("refrescarToken", refrescarToken, {
+        // Configuración para la cookie  solo sea accesible a través de HTTP y no desde JavaScript en el navegador
+        httpOnly: true,
+        // Estableciendo la duracion de la cookie 74 horas (en milisegundos)
+        maxAge: 74 * 60 * 60 * 1000,
+      });
+      res.json({
+        _id: buscarAdmin?._id,
+        nombres: buscarAdmin?.nombres,
+        apellidos: buscarAdmin?.apellidos,
+        email: buscarAdmin?.email,
+        telefono: buscarAdmin?.telefono,
+        token: generarToken(buscarAdmin?._id),
+      });
+    } else {
+      throw new Error("Credenciales inválidas");
+    }
+  } else {
+    throw new Error("No estás autorizado");
+  }
+});
+
 
 //manejador de token de actualización
 const manejadorReinicio = asyncHandler(async (req, res) => {
@@ -316,7 +358,6 @@ const restablecerContrasenia = asyncHandler(async (req, res) => {
   }
 });
 
-
 module.exports = {
   crearUsuario,
   loginUsuarioCtrl,
@@ -331,4 +372,5 @@ module.exports = {
   actualizarContrasenia,
   olvidasteContraseñaToken,
   restablecerContrasenia,
+  loginAdmin,
 };
