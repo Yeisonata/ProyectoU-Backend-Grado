@@ -5,8 +5,11 @@ const Usuario = require("../models/usuarioModelo");
 
 // Importar la utilidad para manejar funciones asíncronas en Express
 const asyncHandler = require("express-async-handler");
+const fs = require("fs")
 
 const slugify = require("slugify");
+const validarMongoDbId = require("../utils/validarMongodbId");
+const cloudinarySubirImagen = require("../utils/cloudinary");
 
 // Controlador para manejar la creación de un nuevo producto
 const crearProducto = asyncHandler(async (req, res) => {
@@ -172,7 +175,7 @@ const addListaDeDeseos = asyncHandler(async (req, res) => {
 
 const califacacion = asyncHandler(async (req, res) => {
   const { _id } = req.usuario;
-  const { estrella, prodId,comentario } = req.body;
+  const { estrella, prodId, comentario } = req.body;
 
   try {
     const producto = await Producto.findById(prodId);
@@ -184,10 +187,14 @@ const califacacion = asyncHandler(async (req, res) => {
     if (yaCalificado) {
       const actualizarCalificacion = await Producto.findOneAndUpdate(
         { "calificaciones.publicadorpor": _id },
-        { $set: { "calificaciones.$.estrella": estrella, "calificaciones.$.comentario":comentario } },
+        {
+          $set: {
+            "calificaciones.$.estrella": estrella,
+            "calificaciones.$.comentario": comentario,
+          },
+        },
         { new: true }
       );
-
     } else {
       const calificarProducto = await Producto.findByIdAndUpdate(
         prodId,
@@ -202,7 +209,6 @@ const califacacion = asyncHandler(async (req, res) => {
         },
         { new: true }
       );
-     
     }
     const obtenerAllCalificaciones = await Producto.findById(prodId);
     const totalCalificacion = obtenerAllCalificaciones.calificaciones.length;
@@ -210,19 +216,42 @@ const califacacion = asyncHandler(async (req, res) => {
       .map((item) => item.estrella)
       .reduce((prev, curr) => prev + curr, 0);
     let califacionActual = Math.round(sumCalificaciones / totalCalificacion);
-     let productoFinal =await Producto.findByIdAndUpdate(
+    let productoFinal = await Producto.findByIdAndUpdate(
       prodId,
       {
         totalCalificacion: califacionActual,
       },
       { new: true }
     );
-    res.json(productoFinal)
+    res.json(productoFinal);
   } catch (error) {
     // Manejo de errores: enviar una respuesta al cliente con un mensaje de error
     // res.status(500).json({ error: "Error al procesar la solicitud." });
-    throw new Error(error)
+    throw new Error(error);
   }
+});
+const subirImagenes = asyncHandler(async (req, res) => {
+ const {id}= req.params
+ validarMongoDbId(id)
+ try {
+  const subidor= (path)=> cloudinarySubirImagen(path,"images")
+  const urls =[]
+  const files= req.files
+  for(const file of files){
+    const{path}= file
+    const newpath= await subidor(path)
+    urls.push(newpath)
+    fs.unlinkSync(path)
+  }
+  const encontrarProducto = await Producto.findByIdAndUpdate(id,{
+    imagenes:urls.map(file=>{return file})
+  },{
+    new:true
+  })
+  res.json(encontrarProducto)
+ } catch (error) {
+  throw new Error(error)
+ }
 });
 
 // Exportar el controlador para su uso en las rutas
@@ -234,4 +263,5 @@ module.exports = {
   eliminarProducto,
   addListaDeDeseos,
   califacacion,
+  subirImagenes,
 };
