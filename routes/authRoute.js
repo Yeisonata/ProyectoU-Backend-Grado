@@ -15,6 +15,7 @@ const {
   restablecerContrasenia,
   loginAdmin,
   obtenerListaDeDeseo,
+  guardarDirrecion,
 } = require("../controller/usuarioController");
 const { authMiddleware, esAdmin } = require("../middleware/authMiddleware");
 
@@ -33,6 +34,7 @@ router.get("/lista-de-deseos", authMiddleware, obtenerListaDeDeseo);
 router.get("/:id", authMiddleware, esAdmin, getUsuario);
 router.delete("/:id-usuario", deleteUsuario);
 router.put("/editar-usuario", authMiddleware, updateUsuario);
+router.put("/guardar-dirrecion", authMiddleware, guardarDirrecion);
 router.put("/bloquear-usuario/:id", authMiddleware, esAdmin, bloquearUsuario);
 router.put(
   "/desbloquear-usuario/:id",

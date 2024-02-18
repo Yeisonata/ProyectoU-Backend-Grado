@@ -190,6 +190,28 @@ const updateUsuario = asyncHandler(async (req, res) => {
   }
 });
 
+//Método para Guardar dirección del usuario
+const guardarDirrecion = asyncHandler(async(req,res,next)=>{
+  const { _id } = req.usuario;
+  validarMongoDbId(_id);
+  try {
+    const updateUsuario = await Usuario.findByIdAndUpdate(
+      _id,
+      {
+        direccion:req?.body?.direccion
+      },
+      {
+        new: true,
+      }
+    );
+    res.json(updateUsuario);
+    // console.log(updateUsuario);
+  } catch (error) {
+    throw new Error(error);
+  }
+});
+
+
 //obtener  los usuarios
 const getallUsuarios = asyncHandler(async (req, res) => {
   try {
@@ -362,7 +384,9 @@ const obtenerListaDeDeseo = asyncHandler(async (req, res) => {
   const { _id } = req.usuario;
   try {
     // Encontrar al usuario en la base de datos y poblar su lista de deseos
-    const encontrarUsuario = await Usuario.findById(_id).populate("listaDeDeseos");
+    const encontrarUsuario = await Usuario.findById(_id).populate(
+      "listaDeDeseos"
+    );
     // Responder con la lista de deseos del usuario en formato JSON
     res.json(encontrarUsuario);
   } catch (error) {
@@ -387,4 +411,5 @@ module.exports = {
   restablecerContrasenia,
   loginAdmin,
   obtenerListaDeDeseo,
+  guardarDirrecion
 };

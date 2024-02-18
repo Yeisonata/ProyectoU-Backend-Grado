@@ -39,7 +39,9 @@ var userSchema = new mongoose.Schema(
       type: Array,
       default: [],
     },
-    direccion: [{ type: mongoose.Schema.Types.ObjectId, ref: "Direccion" }],
+    direccion: {
+      type:String
+    },
     listaDeDeseos: [{ type: mongoose.Schema.Types.ObjectId, ref: "Producto" }],
     refrescarToken: {
       type: String,
