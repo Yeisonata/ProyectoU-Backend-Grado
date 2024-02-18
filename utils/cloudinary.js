@@ -5,7 +5,7 @@ const cloudinary = require("cloudinary");
 cloudinary.config({
   cloud_name: process.env.CLOUD_TIENDA,
   api_key: process.env.API_KEY,
-  secret_key: process.env.SECRET_KEY,
+  api_secret: process.env.SECRET_KEY,
 });
 
 // Función para subir una imagen a Cloudinary

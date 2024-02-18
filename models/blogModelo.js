@@ -39,15 +39,12 @@ var blogSchema = new mongoose.Schema(
         ref: "Usuario",
       },
     ],
-    imagen: {
-      type: String,
-      default:
-        "https://mailrelay.com/wp-content/uploads/2018/03/que-es-un-blog-1.png",
-    },
+    
     autor: {
       type: String,
       default: "Admin",
     },
+    imagenes:[],
   },
   {
     toJSON: {

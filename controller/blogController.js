@@ -2,6 +2,8 @@ const Blog = require("../models/blogModelo");
 const Usuario = require("../models/usuarioModelo");
 const asyncHandler = require("express-async-handler");
 const validarMongoDbId = require("../utils/validarMongodbId");
+const cloudinarySubirImagen = require("../utils/cloudinary");
+const fs = require("fs");
 
 const crearBlog = asyncHandler(async (req, res) => {
   try {
@@ -28,7 +30,9 @@ const obtenerBlog = asyncHandler(async (req, res) => {
   const { id } = req.params;
   validarMongoDbId(id);
   try {
-    const obtenerBlog = await Blog.findById(id).populate("likes").populate("dislikes");
+    const obtenerBlog = await Blog.findById(id)
+      .populate("likes")
+      .populate("dislikes");
     const actualizarVisitas = await Blog.findByIdAndUpdate(
       id,
       {
@@ -120,7 +124,7 @@ const noMeGustaBlog = asyncHandler(async (req, res) => {
   const yaMeGusta = blog?.likes?.find(
     (usuarioId) => usuarioId?.toString() === inicioIdUsuario?.toString()
   );
-  
+
   if (yaMeGusta) {
     const updatedBlog = await Blog.findByIdAndUpdate(
       blogId,
@@ -155,6 +159,35 @@ const noMeGustaBlog = asyncHandler(async (req, res) => {
     res.json(updatedBlog);
   }
 });
+const subirImagenes = asyncHandler(async (req, res) => {
+  const { id } = req.params;
+  validarMongoDbId(id);
+  try {
+    const subidor = (path) => cloudinarySubirImagen(path, "images");
+    const urls = [];
+    const files = req.files;
+    for (const file of files) {
+      const { path } = file;
+      const newpath = await subidor(path);
+      urls.push(newpath);
+      fs.unlinkSync(path)
+    }
+    const encontrarBlog = await Blog.findByIdAndUpdate(
+      id,
+      {
+        imagenes: urls.map((file) => {
+          return file;
+        }),
+      },
+      {
+        new: true,
+      }
+    );
+    res.json(encontrarBlog);
+  } catch (error) {
+    throw new Error(error);
+  }
+});
 
 module.exports = {
   crearBlog,
@@ -164,4 +197,5 @@ module.exports = {
   eliminarBlog,
   meGustaBlog,
   noMeGustaBlog,
+  subirImagenes
 };

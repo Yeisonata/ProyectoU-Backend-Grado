@@ -282,7 +282,10 @@ const restablecerContrasenia = asyncHandler(async (req, res) => {
 
     // Extraer el token de restablecimiento de la URL y hashearlo para comparación
     const { token } = req.params;
-    const tokenHasheado = crypto.createHash("sha256").update(token).digest("hex");
+    const tokenHasheado = crypto
+      .createHash("sha256")
+      .update(token)
+      .digest("hex");
 
     // Buscar un usuario en la base de datos con el token y que no haya expirado
     const usuario = await Usuario.findOne({
@@ -292,7 +295,9 @@ const restablecerContrasenia = asyncHandler(async (req, res) => {
 
     // Verificar si se encontró un usuario
     if (!usuario) {
-      throw new Error("Token expirado o no válido. Por favor, inténtalo de nuevo.");
+      throw new Error(
+        "Token expirado o no válido. Por favor, inténtalo de nuevo."
+      );
     }
 
     // Actualizar la contraseña y limpiar campos relacionados al restablecimiento
@@ -310,6 +315,7 @@ const restablecerContrasenia = asyncHandler(async (req, res) => {
     res.status(500).json({ error: error.message });
   }
 });
+
 
 module.exports = {
   crearUsuario,
