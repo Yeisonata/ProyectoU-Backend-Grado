@@ -25,14 +25,13 @@ const authMiddleware = asyncHandler(async (req, res, next) => {
   }
 });
 
-const esAdmin = asyncHandler(async(req,res,next)=>{
-  const {email} = req.usuario
-  const adminUsuario =await Usuario.findOne({email})
-  if(adminUsuario.roles !=="admin"){
- throw new Error("No eres administrador")
-  }else{
-    next()
+const esAdmin = asyncHandler(async (req, res, next) => {
+  const { email } = req.usuario;
+  const adminUsuario = await Usuario.findOne({ email });
+  if (adminUsuario.roles !== "admin") {
+    throw new Error("No eres administrador");
+  } else {
+    next();
   }
-
-})
-module.exports = { authMiddleware,esAdmin };
+});
+module.exports = { authMiddleware, esAdmin };

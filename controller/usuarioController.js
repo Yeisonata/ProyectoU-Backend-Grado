@@ -1,5 +1,7 @@
 const { generarToken } = require("../config/jwtToken");
 const Usuario = require("../models/usuarioModelo");
+const Producto = require("../models/productoModelo");
+const Carrito = require("../models/carritoModelo");
 const asyncHandler = require("express-async-handler");
 const validarMongoDbId = require("../utils/validarMongodbId");
 const { actualizarRToken } = require("../config/refrescarToken");
@@ -191,14 +193,14 @@ const updateUsuario = asyncHandler(async (req, res) => {
 });
 
 //Método para Guardar dirección del usuario
-const guardarDirrecion = asyncHandler(async(req,res,next)=>{
+const guardarDirrecion = asyncHandler(async (req, res, next) => {
   const { _id } = req.usuario;
   validarMongoDbId(_id);
   try {
     const updateUsuario = await Usuario.findByIdAndUpdate(
       _id,
       {
-        direccion:req?.body?.direccion
+        direccion: req?.body?.direccion,
       },
       {
         new: true,
@@ -210,7 +212,6 @@ const guardarDirrecion = asyncHandler(async(req,res,next)=>{
     throw new Error(error);
   }
 });
-
 
 //obtener  los usuarios
 const getallUsuarios = asyncHandler(async (req, res) => {
@@ -394,6 +395,98 @@ const obtenerListaDeDeseo = asyncHandler(async (req, res) => {
     throw new Error(error);
   }
 });
+// Controlador para manejar la creación del carrito de compras para un usuario
+const usuarioCarritoCompras = asyncHandler(async (req, res) => {
+  // Extraer el carrito de la solicitud
+  const { carrito } = req.body;
+  // Extraer el ID de usuario de la solicitud
+  const { _id } = req.usuario;
+  // Validar el ID de usuario utilizando una función auxiliar
+  validarMongoDbId(_id);
+  try {
+    let productos = [];
+    // Buscar al usuario en la base de datos
+    const usuario = await Usuario.findById(_id);
+    
+    // Verificar si el usuario ya tiene un carrito de compras existente y eliminarlo si es así
+    const yaExistenteCarrito = await Carrito.findOne({ ordenPor: usuario._id });
+    if (yaExistenteCarrito) {
+      yaExistenteCarrito.remove();
+    }
+    
+    // Iterar sobre los productos en el carrito enviado en la solicitud
+    for (let i = 0; i < carrito.length; i++) {
+      let object = {};
+      object.producto = carrito[i]._id;
+      object.cuenta = carrito[i].cuenta;
+      object.color = carrito[i].color;
+      
+      // Obtener el precio del producto desde la base de datos
+      let obtenerPrecio = await Producto.findById(carrito[i]._id)
+        .select("precio")
+        .exec();
+      object.precio = obtenerPrecio.precio;
+      
+      productos.push(object);
+    }
+    
+    // Calcular el precio total del carrito
+    let carritoTotal = 0;
+    for (let i = 0; i < productos.length; i++) {
+      carritoTotal += productos[i].precio * productos[i].cuenta;
+    }
+    
+    // Crear y guardar un nuevo carrito de compras en la base de datos
+    let nuevoCarrito = await new Carrito({
+      productos,
+      carritoTotal,
+      ordenPor: usuario?._id
+    }).save();
+    
+    // Responder con el carrito de compras creado en formato JSON
+    res.json(nuevoCarrito);
+  } catch (error) {
+    // Capturar y lanzar cualquier error que ocurra durante el proceso
+    throw new Error(error);
+  }
+});
+
+// Controlador para obtener el carrito de compras de un usuario
+const obtenerUsuarioCarrito = asyncHandler(async (req, res) => {
+  // Extraer el ID de usuario de la solicitud
+  const { _id } = req.usuario;
+  // Validar el ID de usuario utilizando una función auxiliar
+  validarMongoDbId(_id);
+  try {
+    // Buscar el carrito de compras del usuario en la base de datos y poblar los detalles del producto
+    const carrito = await Carrito.findOne({ ordenPor: _id }).populate("productos.producto");
+    // Responder con el carrito de compras del usuario en formato JSON
+    res.json(carrito);
+  } catch (error) {
+    // Capturar y lanzar cualquier error que ocurra durante el proceso
+    throw new Error(error);
+  }
+});
+
+// Controlador para vaciar el carrito de compras de un usuario
+const carritoVacio = asyncHandler(async (req, res) => {
+  // Extraer el ID de usuario de la solicitud
+  const { _id } = req.usuario;
+  // Validar el ID de usuario utilizando una función auxiliar
+  validarMongoDbId(_id);
+  try {
+    // Buscar al usuario en la base de datos
+    const usuario = await Usuario.findOne({ _id });
+    // Eliminar el carrito de compras del usuario de la base de datos
+    const carrito = await Carrito.findOneAndDelete({ ordenPor: usuario._id });
+    // Responder con el carrito de compras eliminado en formato JSON
+    res.json(carrito);
+  } catch (error) {
+    // Capturar y lanzar cualquier error que ocurra durante el proceso
+    throw new Error(error);
+  }
+});
+
 
 module.exports = {
   crearUsuario,
@@ -411,5 +504,8 @@ module.exports = {
   restablecerContrasenia,
   loginAdmin,
   obtenerListaDeDeseo,
-  guardarDirrecion
+  guardarDirrecion,
+  usuarioCarritoCompras,
+  obtenerUsuarioCarrito,
+  carritoVacio,
 };

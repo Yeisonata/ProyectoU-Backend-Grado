@@ -5,7 +5,7 @@ var carritoSchema = new mongoose.Schema(
   {
     productos: [
       {
-        productos: {
+        producto: {
           type: mongoose.Schema.Types.ObjectId,
           ref: "Producto",
         },
