@@ -98,7 +98,6 @@ const loginAdmin = asyncHandler(async (req, res) => {
   }
 });
 
-
 //manejador de token de actualización
 const manejadorReinicio = asyncHandler(async (req, res) => {
   // Obtener la cookie del request
@@ -357,6 +356,20 @@ const restablecerContrasenia = asyncHandler(async (req, res) => {
     res.status(500).json({ error: error.message });
   }
 });
+// Controlador para obtener la lista de deseos de un usuario
+const obtenerListaDeDeseo = asyncHandler(async (req, res) => {
+  // Obtener el ID del usuario de la solicitud
+  const { _id } = req.usuario;
+  try {
+    // Encontrar al usuario en la base de datos y poblar su lista de deseos
+    const encontrarUsuario = await Usuario.findById(_id).populate("listaDeDeseos");
+    // Responder con la lista de deseos del usuario en formato JSON
+    res.json(encontrarUsuario);
+  } catch (error) {
+    // Manejar errores y lanzar una excepción con el mensaje de error
+    throw new Error(error);
+  }
+});
 
 module.exports = {
   crearUsuario,
@@ -373,4 +386,5 @@ module.exports = {
   olvidasteContraseñaToken,
   restablecerContrasenia,
   loginAdmin,
+  obtenerListaDeDeseo,
 };
