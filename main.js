@@ -11,7 +11,9 @@ const blogRouter = require("./routes/blogRoute");
 const categoriaRouter = require("./routes/prodcategoriaRoute");
 const blogcategoriaRouter = require("./routes/blogcatRoute");
 const MarcaRouter = require("./routes/marcaRoute");
+const ColorRouter = require("./routes/colorRoute");
 const CuponRouter = require("./routes/cuponesRoute");
+const ContactoRouter = require("./routes/contactoRoute");
 
 const cookieParser = require("cookie-parser");
 const { noEncontrado, errorHandler } = require("./middleware/manejadorError");
@@ -19,7 +21,7 @@ const morgan = require("morgan");
 dbConexion();
 
 app.use(morgan("dev"));
-app.use(bodyParser.json())
+app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({ extended: false }));
 app.use(cookieParser());
 
@@ -29,7 +31,9 @@ app.use("/api/blog", blogRouter);
 app.use("/api/categoria", categoriaRouter);
 app.use("/api/blogcategoria", blogcategoriaRouter);
 app.use("/api/marca", MarcaRouter);
+app.use("/api/color", ColorRouter);
 app.use("/api/cupon", CuponRouter);
+app.use("/api/contacto", ContactoRouter);
 
 app.use(noEncontrado);
 app.use(errorHandler);

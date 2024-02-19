@@ -5,11 +5,11 @@ const Usuario = require("../models/usuarioModelo");
 
 // Importar la utilidad para manejar funciones asíncronas en Express
 const asyncHandler = require("express-async-handler");
-const fs = require("fs")
+const fs = require("fs");
 
 const slugify = require("slugify");
 const validarMongoDbId = require("../utils/validarMongodbId");
-const cloudinarySubirImagen = require("../utils/cloudinary");
+const {cloudinarySubirImagen,cloudinaryEliminarImagen} = require("../utils/cloudinary");
 
 // Controlador para manejar la creación de un nuevo producto
 const crearProducto = asyncHandler(async (req, res) => {
@@ -231,27 +231,33 @@ const califacacion = asyncHandler(async (req, res) => {
   }
 });
 const subirImagenes = asyncHandler(async (req, res) => {
- const {id}= req.params
- validarMongoDbId(id)
- try {
-  const subidor= (path)=> cloudinarySubirImagen(path,"images")
-  const urls =[]
-  const files= req.files
-  for(const file of files){
-    const{path}= file
-    const newpath= await subidor(path)
-    urls.push(newpath)
-    fs.unlinkSync(path)
+  try {
+    const subidor = (path) => cloudinarySubirImagen(path, "images");
+    const urls = [];
+    const files = req.files;
+    for (const file of files) {
+      const { path } = file;
+      const newpath = await subidor(path);
+      urls.push(newpath);
+      fs.unlinkSync(path);
+    }
+    const imagenes = urls.map((file) => {
+      return file;
+    });
+    res.json(imagenes);
+  } catch (error) {
+    throw new Error(error);
   }
-  const encontrarProducto = await Producto.findByIdAndUpdate(id,{
-    imagenes:urls.map(file=>{return file})
-  },{
-    new:true
-  })
-  res.json(encontrarProducto)
- } catch (error) {
-  throw new Error(error)
- }
+});
+
+const eliminarImagenes = asyncHandler(async (req, res) => {
+  const {id}=req.params
+  try {
+    const eliminar = cloudinaryEliminarImagen(id, "images");
+ res.json({messages:"Eliminada"})
+  } catch (error) {
+    throw new Error(error);
+  }
 });
 
 // Exportar el controlador para su uso en las rutas
@@ -264,4 +270,5 @@ module.exports = {
   addListaDeDeseos,
   califacacion,
   subirImagenes,
+  eliminarImagenes
 };

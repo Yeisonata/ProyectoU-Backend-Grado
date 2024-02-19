@@ -11,6 +11,7 @@ const {
   addListaDeDeseos,
   califacacion,
   subirImagenes,
+  eliminarImagenes,
 } = require("../controller/productoController");
 
 // Importa las funciones 'esAdmin' y 'authMiddleware' desde el módulo 'authMiddleware'
@@ -26,7 +27,7 @@ const router = express.Router();
 // Ruta POST para la creación de productos, utiliza el controlador crearProducto
 router.post("/", authMiddleware, esAdmin, crearProducto);
 router.put(
-  "/subir/:id",
+  "/subir",
   authMiddleware,
   esAdmin,
   subirFoto.array("images", 10),
@@ -40,6 +41,7 @@ router.put("/calificacion", authMiddleware, califacacion);
 
 router.put("/:id", authMiddleware, esAdmin, actualizarProducto);
 router.delete("/:id", authMiddleware, esAdmin, eliminarProducto);
+router.delete("/eliminar-imagen/:id", authMiddleware, esAdmin, eliminarImagenes);
 router.get("/", getAllProductos);
 
 // Exportar el router para su uso en la aplicación principal
