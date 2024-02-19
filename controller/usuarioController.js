@@ -2,6 +2,9 @@ const { generarToken } = require("../config/jwtToken");
 const Usuario = require("../models/usuarioModelo");
 const Producto = require("../models/productoModelo");
 const Carrito = require("../models/carritoModelo");
+const Cupon = require("../models/cuponesModelo");
+const Pedido = require("../models/pedidoModelo");
+const uniqid = require("uniqid");
 const asyncHandler = require("express-async-handler");
 const validarMongoDbId = require("../utils/validarMongodbId");
 const { actualizarRToken } = require("../config/refrescarToken");
@@ -407,42 +410,42 @@ const usuarioCarritoCompras = asyncHandler(async (req, res) => {
     let productos = [];
     // Buscar al usuario en la base de datos
     const usuario = await Usuario.findById(_id);
-    
+
     // Verificar si el usuario ya tiene un carrito de compras existente y eliminarlo si es así
     const yaExistenteCarrito = await Carrito.findOne({ ordenPor: usuario._id });
     if (yaExistenteCarrito) {
       yaExistenteCarrito.remove();
     }
-    
+
     // Iterar sobre los productos en el carrito enviado en la solicitud
     for (let i = 0; i < carrito.length; i++) {
       let object = {};
       object.producto = carrito[i]._id;
       object.cuenta = carrito[i].cuenta;
       object.color = carrito[i].color;
-      
+
       // Obtener el precio del producto desde la base de datos
       let obtenerPrecio = await Producto.findById(carrito[i]._id)
         .select("precio")
         .exec();
       object.precio = obtenerPrecio.precio;
-      
+
       productos.push(object);
     }
-    
+
     // Calcular el precio total del carrito
     let carritoTotal = 0;
     for (let i = 0; i < productos.length; i++) {
       carritoTotal += productos[i].precio * productos[i].cuenta;
     }
-    
+
     // Crear y guardar un nuevo carrito de compras en la base de datos
     let nuevoCarrito = await new Carrito({
       productos,
       carritoTotal,
-      ordenPor: usuario?._id
+      ordenPor: usuario?._id,
     }).save();
-    
+
     // Responder con el carrito de compras creado en formato JSON
     res.json(nuevoCarrito);
   } catch (error) {
@@ -459,7 +462,9 @@ const obtenerUsuarioCarrito = asyncHandler(async (req, res) => {
   validarMongoDbId(_id);
   try {
     // Buscar el carrito de compras del usuario en la base de datos y poblar los detalles del producto
-    const carrito = await Carrito.findOne({ ordenPor: _id }).populate("productos.producto");
+    const carrito = await Carrito.findOne({ ordenPor: _id }).populate(
+      "productos.producto"
+    );
     // Responder con el carrito de compras del usuario en formato JSON
     res.json(carrito);
   } catch (error) {
@@ -486,7 +491,105 @@ const carritoVacio = asyncHandler(async (req, res) => {
     throw new Error(error);
   }
 });
+const aplicarCupon = asyncHandler(async (req, res) => {
+  const { cupon } = req.body;
+  // Extraer el ID de usuario de la solicitud
+  const { _id } = req.usuario;
+  // Validar el ID de usuario utilizando una función auxiliar
+  validarMongoDbId(_id);
+  const cuponValido = await Cupon.findOne({ nombre: cupon });
+  if (cuponValido === null) {
+    throw new Error("Cupon no valido");
+  }
+  const usuario = await Usuario.findOne({ _id });
+  let { carritoTotal } = await Carrito.findOne({
+    ordenPor: usuario._id,
+  }).populate("productos.producto");
+  let totalDespuesDescuento = (
+    carritoTotal -
+    (carritoTotal * cuponValido.descuento) / 100
+  ).toFixed(2);
+  await Carrito.findOneAndUpdate(
+    { ordenPor: usuario._id },
+    { totalDespuesDescuento },
+    { new: true }
+  );
+  res.json(totalDespuesDescuento);
+});
+const crearOrden = asyncHandler(async (req, res) => {
+  const { COD, cuponAplicado } = req.body;
+  const { _id } = req.usuario;
+  validarMongoDbId(_id);
+  try {
+    if (!COD) throw new Error("Error al crear orden de entrega");
+    const usuario = await Usuario.findById(_id);
+    let usoCarrito = await Carrito.findOne({ ordenPor: usuario._id });
+    let cantidadFinal = 0;
+    if (cuponAplicado && usoCarrito.totalDespuesDescuento) {
+      cantidadFinal = usoCarrito.totalDespuesDescuento;
+    } else {
+      cantidadFinal = usoCarrito.carritoTotal;
+    }
 
+    let nuevaOrden = await new Pedido({
+      productos: usoCarrito.productos,
+      metodoPago: {
+        id: uniqid(),
+        metodo: "COD", // Pago contra entrega
+        cantidad: cantidadFinal,
+        estado: "Efectivo o Entrega",
+        creado: Date.now(),
+        moneda: "COP",
+      },
+      ordenPor: usuario._id,
+      estadoOrden: "Efectivo O Entrega",
+    }).save();
+    let actualizar = usoCarrito.productos.map((item) => {
+      return {
+        updateOne: {
+          filter: { _id: item.producto._id },
+          update: { $inc: { cantidad: -item.cuenta, vendido: +item.cuenta } },
+        },
+      };
+    });
+    const actualizado = await Producto.bulkWrite(actualizar, {});
+    res.json({ message: "Exitosamente" });
+  } catch (error) {
+    throw new Error(error);
+  }
+});
+const obtenerOrdenes = asyncHandler(async (req, res) => {
+  const { _id } = req.usuario;
+  validarMongoDbId(_id);
+  try {
+    const usuarioOrdenes = await Pedido.findOne({ ordenPor: _id })
+      .populate("productos.producto")
+      .exec();
+    res.json(usuarioOrdenes);
+  } catch (error) {
+    throw new Error(error);
+  }
+});
+
+const actualizarEstadoOrden = asyncHandler(async (req, res) => {
+  const { estado } = req.body;
+  const { id } = req.params;
+  validarMongoDbId(id);
+  try {
+    const actualizarEstadoOrden = await Pedido.findByIdAndUpdate(
+      id,
+      { estadoOrden: estado,
+        metodoPago:{
+          estado:estado,
+        }
+      },
+      { new: true }
+    );
+    res.json(actualizarEstadoOrden)
+  } catch (error) {
+    throw new Error(error)
+  }
+});
 
 module.exports = {
   crearUsuario,
@@ -508,4 +611,8 @@ module.exports = {
   usuarioCarritoCompras,
   obtenerUsuarioCarrito,
   carritoVacio,
+  aplicarCupon,
+  crearOrden,
+  obtenerOrdenes,
+  actualizarEstadoOrden,
 };

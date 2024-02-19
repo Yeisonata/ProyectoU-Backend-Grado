@@ -19,7 +19,7 @@ var pedidoSchema = new mongoose.Schema(
       default: "No Procesado",
       enum: [
         "No Procesado",
-        "pagoContraEntrega",
+        "Efectivo O Entrega",
         "Procesando",
         "Enviando",
         "Cancelado",
